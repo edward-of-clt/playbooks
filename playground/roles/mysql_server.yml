@@ -1,0 +1,36 @@
+---
+# file: mysql_server.yml
+- name: "MySQL Server"
+  hosts: all
+  become_user: root
+  become: yes
+  tasks:
+      - name: install the mysql server rpm from a remote repo
+        yum:
+          name: https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+          state: present
+      - name: Install MySQL Community Server
+        yum:
+          name: mysql-server
+          state: latest
+      - name: Enable MySQL Server service
+        service:
+          name: mysqld
+          state: started
+          enabled: true
+      - name: Change mysql root password and keep track
+        shell: |
+          password_match=`awk '/A temporary password is generated for/ {a=$0} END{ print a }' /var/log/mysqld.log | awk '{print $(NF)}'`
+          new_password=`openssl rand -base64 32`
+          echo $password_match
+          mysql  -uroot -p$password_match --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY  '$new_password'; flush privileges; "
+          echo "[client]
+          user=root
+          password=$new_password" > /root/.my.cnf
+        args:
+          creates: /root/.my.cnf
+        register: change_temp_pass
+      # - name: restart mysql_server
+      #   service:
+      #     name: mysqld
+      #     state: restarted

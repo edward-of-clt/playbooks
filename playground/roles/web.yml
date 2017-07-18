@@ -1,0 +1,20 @@
+---
+# file: apache.yml
+- name: "Apache"
+  hosts: all
+  become_user: root
+  become: yes
+  tasks:
+      - name: Install Apache
+        yum:
+          name: httpd
+          state: latest
+      - name: Install PHP
+        yum:
+          name: php
+          state: latest
+      - name: Enable Apache
+        service:
+          name: httpd
+          state: started
+          enabled: true
